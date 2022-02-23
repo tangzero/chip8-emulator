@@ -1,6 +1,9 @@
 package chip8
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"math"
+)
 
 const (
 	MemorySize      = 4096 // 4KB of memory
@@ -45,6 +48,9 @@ func (emulator *Emulator) Reset() {
 }
 
 func (emulator *Emulator) Step() {
+	emulator.Timer.Delay = uint8(math.Max(0, float64(emulator.Timer.Delay)-1))
+	emulator.Timer.Sound = uint8(math.Max(0, float64(emulator.Timer.Sound)-1))
+
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
 
 	switch instruction & 0xF000 {
