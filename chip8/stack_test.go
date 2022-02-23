@@ -18,6 +18,17 @@ func TestEmulator_StackPush(t *testing.T) {
 	assert.Equal(t, chip8.StackAddress+2, emulator.SP)
 }
 
+func TestEmulator_StackPush_Overflow(t *testing.T) {
+	emulator := chip8.NewEmulator()
+
+	defer func() {
+		assert.Equal(t, "chip8: stack overflow", recover())
+	}()
+
+	emulator.SP = chip8.StackAddress + chip8.StackSize*2
+	emulator.StackPush()
+}
+
 func TestEmulator_StackPop(t *testing.T) {
 	emulator := chip8.NewEmulator()
 
@@ -28,4 +39,14 @@ func TestEmulator_StackPop(t *testing.T) {
 
 	assert.Equal(t, uint16(0xEEFF), emulator.PC)
 	assert.Equal(t, chip8.StackAddress+30, emulator.SP)
+}
+
+func TestEmulator_StackPop_Empty(t *testing.T) {
+	emulator := chip8.NewEmulator()
+
+	defer func() {
+		assert.Equal(t, "chip8: nothing to pop from stack", recover())
+	}()
+
+	emulator.StackPop()
 }
