@@ -53,16 +53,61 @@ func (emulator *Emulator) Step() {
 
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
 
-	switch instruction & 0xF000 {
-	case 0x1000: // 1nnn - JP addr
-		emulator.Jump(instruction & 0x0FFF)
-	case 0x2000: // 2nnn - CALL addr
-		emulator.Call(instruction & 0x0FFF)
-	case 0x3000: // 3xkk - SE Vx, byte
-		emulator.SkipEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00FF))
-	case 0x4000: // 4xkk - SNE Vx, byte
-		emulator.SkipNotEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00FF))
-	case 0x5000: // 5xy0 - SE Vx, Vy
-		emulator.SkipRegistersEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00F0>>4))
+	nnn := instruction & 0x0FFF
+	// n := uint8(instruction & 0x000F)
+	kk := uint8(instruction & 0x00FF)
+	x := uint8(instruction & 0x0F00 >> 8)
+	y := uint8(instruction & 0x00F0 >> 4)
+
+	switch instruction & 0xF000 >> 12 {
+	case 0x1: // 1nnn - JP addr
+		emulator.Jump(nnn)
+	case 0x2: // 2nnn - CALL addr
+		emulator.Call(nnn)
+	case 0x3: // 3xkk - SE Vx, byte
+		emulator.SkipEqual(x, kk)
+	case 0x4: // 4xkk - SNE Vx, byte
+		emulator.SkipNotEqual(x, kk)
+	case 0x5: // 5xy0 - SE Vx, Vy
+		emulator.SkipRegistersEqual(x, y)
+	case 0x6: // 6xkk - LD Vx, byte
+		emulator.LoadByte(x, kk)
+	case 0x7: // 7xkk - ADD Vx, byte
+		emulator.Add(x, kk)
+	case 0x8:
+		switch instruction & 0x000F {
+		case 0x0: // 8xy0 - LD Vx, Vy
+			emulator.LoadRegister(x, y)
+		case 0x1: // 8xy1 - OR Vx, Vy
+		case 0x2: // 8xy2 - AND Vx, Vy
+		case 0x3: // 8xy3 - XOR Vx, Vy
+		case 0x4: // 8xy4 - ADD Vx, Vy
+		case 0x5: // 8xy5 - SUB Vx, Vy
+		case 0x6: // 8xy6 - SHR Vx {, Vy}
+		case 0x7: // 8xy7 - SUBN Vx, Vy
+		case 0xE: // 8xyE - SHL Vx {, Vy}
+		}
+	case 0x9: // 9xy0 - SNE Vx, Vy
+	case 0xA: // Annn - LD I, addr
+	case 0xB: // Bnnn - JP V0, addr
+	case 0xC: // Cxkk - RND Vx, byte
+	case 0xD: // Dxyn - DRW Vx, Vy, nibble
+	case 0xE:
+		switch instruction & 0x00FF {
+		case 0x9E: // SKP Vx
+		case 0xA1: // SKNP Vx
+		}
+	case 0xF:
+		switch instruction & 0x00FF {
+		case 0x07: // LD Vx, DT
+		case 0x0A: // LD Vx, K
+		case 0x15: // LD DT, Vx
+		case 0x18: // LD ST, Vx
+		case 0x1E: // ADD I, Vx
+		case 0x29: // LD F, Vx
+		case 0x33: // LD B, Vx
+		case 0x55: // LD [I], Vx
+		case 0x65: // LD Vx, [I]
+		}
 	}
 }
