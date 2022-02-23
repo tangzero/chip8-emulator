@@ -47,7 +47,9 @@ func (emulator *Emulator) Reset() {
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
 }
 
-func (emulator *Emulator) Step() {
+func (emulator *Emulator) Cycle() {
+	pc := emulator.PC
+
 	emulator.Timer.Delay = uint8(math.Max(0, float64(emulator.Timer.Delay)-1))
 	emulator.Timer.Sound = uint8(math.Max(0, float64(emulator.Timer.Sound)-1))
 
@@ -73,19 +75,26 @@ func (emulator *Emulator) Step() {
 	case 0x6: // 6xkk - LD Vx, byte
 		emulator.LoadByte(x, kk)
 	case 0x7: // 7xkk - ADD Vx, byte
-		emulator.Add(x, kk)
+		emulator.AddByte(x, kk)
 	case 0x8:
 		switch instruction & 0x000F {
 		case 0x0: // 8xy0 - LD Vx, Vy
 			emulator.LoadRegister(x, y)
 		case 0x1: // 8xy1 - OR Vx, Vy
+			emulator.Or(x, y)
 		case 0x2: // 8xy2 - AND Vx, Vy
+			emulator.And(x, y)
 		case 0x3: // 8xy3 - XOR Vx, Vy
+			emulator.Xor(x, y)
 		case 0x4: // 8xy4 - ADD Vx, Vy
+			emulator.AddRegisters(x, y)
 		case 0x5: // 8xy5 - SUB Vx, Vy
+			emulator.Sub(x, y)
 		case 0x6: // 8xy6 - SHR Vx {, Vy}
+			emulator.ShiftRight(x)
 		case 0x7: // 8xy7 - SUBN Vx, Vy
 		case 0xE: // 8xyE - SHL Vx {, Vy}
+			emulator.ShiftLeft(x)
 		}
 	case 0x9: // 9xy0 - SNE Vx, Vy
 	case 0xA: // Annn - LD I, addr
@@ -109,5 +118,10 @@ func (emulator *Emulator) Step() {
 		case 0x55: // LD [I], Vx
 		case 0x65: // LD Vx, [I]
 		}
+	}
+
+	// if the program counter is unchanged and isn't a loop, read next instruction
+	if emulator.PC == pc && nnn != pc {
+		emulator.PC += InstructionSize
 	}
 }
