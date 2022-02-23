@@ -12,5 +12,5 @@ test:
 	go test -v -race ./chip8
 
 clean: 
-	rm $(LIBRETRO_CORE) $(LIBRETRO_HEADER)
+	rm -f $(LIBRETRO_CORE) $(LIBRETRO_HEADER)
 
