@@ -9,31 +9,50 @@ func (emulator *Emulator) Return() {
 	emulator.StackPop()
 }
 
-func (emulator *Emulator) Jump(addr uint16) {
-	emulator.PC = addr
+// Jump to location nnn.
+//
+// The interpreter sets the program counter to nnn.
+func (emulator *Emulator) Jump(nnn uint16) {
+	emulator.PC = nnn
 }
 
-func (emulator *Emulator) Call(addr uint16) {
+// Call subroutine at nnn.
+//
+// The interpreter increments the stack pointer, then puts the current PC
+// on the top of the stack. The PC is then set to nnn.
+func (emulator *Emulator) Call(nnn uint16) {
 	emulator.StackPush()
-	emulator.PC = addr
+	emulator.PC = nnn
 }
 
-func (emulator *Emulator) SkipEqual(x uint8, value uint8) {
-	if emulator.V[x] == value {
+// Skip next instruction if Vx = kk.
+//
+// The interpreter compares register Vx to kk, and if they are equal,
+// increments the program counter by 2.
+func (emulator *Emulator) SkipEqual(x uint8, kk uint8) {
+	if emulator.V[x] == kk {
 		emulator.PC += InstructionSize * 2
 	} else {
 		emulator.PC += InstructionSize
 	}
 }
 
-func (emulator *Emulator) SkipNotEqual(x uint8, value uint8) {
-	if emulator.V[x] != value {
+// Skip next instruction if Vx != kk.
+//
+// The interpreter compares register Vx to kk, and if they are not equal,
+// increments the program counter by 2.
+func (emulator *Emulator) SkipNotEqual(x uint8, kk uint8) {
+	if emulator.V[x] != kk {
 		emulator.PC += InstructionSize * 2
 	} else {
 		emulator.PC += InstructionSize
 	}
 }
 
+// Skip next instruction if Vx = Vy.
+//
+// The interpreter compares register Vx to register Vy, and if they are equal,
+// increments the program counter by 2.
 func (emulator *Emulator) SkipRegistersEqual(x uint8, y uint8) {
 	if emulator.V[x] == emulator.V[y] {
 		emulator.PC += InstructionSize * 2

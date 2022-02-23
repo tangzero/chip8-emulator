@@ -1,5 +1,7 @@
 package chip8
 
+import "encoding/binary"
+
 const (
 	MemorySize      = 4096 // 4KB of memory
 	StackSize       = 16
@@ -40,4 +42,21 @@ func (emulator *Emulator) Reset() {
 	emulator.Timer.Delay = 0
 	emulator.Timer.Sound = 0
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
+}
+
+func (emulator *Emulator) Step() {
+	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
+
+	switch instruction & 0xF000 {
+	case 0x1000: // 1nnn - JP addr
+		emulator.Jump(instruction & 0x0FFF)
+	case 0x2000: // 2nnn - CALL addr
+		emulator.Call(instruction & 0x0FFF)
+	case 0x3000: // 3xkk - SE Vx, byte
+		emulator.SkipEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00FF))
+	case 0x4000: // 4xkk - SNE Vx, byte
+		emulator.SkipNotEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00FF))
+	case 0x5000: // 5xy0 - SE Vx, Vy
+		emulator.SkipRegistersEqual(uint8(instruction&0x0F00>>8), uint8(instruction&0x00F0>>4))
+	}
 }
