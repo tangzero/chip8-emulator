@@ -8,14 +8,11 @@ import (
 
 const (
 	MemorySize      = 4096 // 4KB of memory
-	StackSize       = 16
 	InstructionSize = 2
 )
 
 const (
-	ProgramAddress     = uint16(0x0200)
-	StackAddress       = uint16(0x0EA0)
-	VideoBufferAddress = uint16(0x0F00)
+	ProgramAddress = uint16(0x0200)
 )
 
 const (
@@ -27,17 +24,19 @@ const (
 type Emulator struct {
 	V       [16]uint8         // general registers
 	I       uint16            // address register
-	SP      uint16            // stack pointer
 	PC      uint16            // program counter
 	DT      uint8             // delay timer
 	ST      uint8             // sound timer
+	Stack   *Stack            // very simple stack
 	Memory  [MemorySize]uint8 // 4KB of system RAM
 	ROM     []uint8           // game rom
-	Display *image.Gray
+	Display *image.Gray       // display buffer
 }
 
 func NewEmulator() *Emulator {
 	emulator := new(Emulator)
+	emulator.Stack = NewStack()
+	emulator.Display = image.NewGray(image.Rect(0, 0, Width, Height))
 	emulator.Reset()
 	return emulator
 }
@@ -45,17 +44,22 @@ func NewEmulator() *Emulator {
 func (emulator *Emulator) Reset() {
 	emulator.V = [16]uint8{}
 	emulator.I = 0
-	emulator.SP = StackAddress
 	emulator.PC = ProgramAddress
 	emulator.DT = 0
 	emulator.ST = 0
 	emulator.Memory = [MemorySize]uint8{}
+
+	// clean stack
+	emulator.Stack.Clear()
+
+	// clean display
+	emulator.ClearScreen()
+
+	// load rom on memory
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
-	emulator.Display = image.NewGray(image.Rect(0, 0, Width, Height))
 }
 
 func (emulator *Emulator) Cycle() {
-
 	pc := emulator.PC
 
 	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
@@ -82,11 +86,11 @@ func (emulator *Emulator) Cycle() {
 	case 0x2: // 2nnn - CALL addr
 		emulator.Call(nnn)
 	case 0x3: // 3xkk - SE Vx, byte
-		emulator.SkipEqual(x, kk)
+		emulator.SkipEqualByte(x, kk)
 	case 0x4: // 4xkk - SNE Vx, byte
-		emulator.SkipNotEqual(x, kk)
+		emulator.SkipNotEqualByte(x, kk)
 	case 0x5: // 5xy0 - SE Vx, Vy
-		emulator.SkipRegistersEqual(x, y)
+		emulator.SkipEqual(x, y)
 	case 0x6: // 6xkk - LD Vx, byte
 		emulator.LoadByte(x, kk)
 	case 0x7: // 7xkk - ADD Vx, byte
@@ -113,6 +117,7 @@ func (emulator *Emulator) Cycle() {
 			emulator.ShiftLeft(x)
 		}
 	case 0x9: // 9xy0 - SNE Vx, Vy
+		emulator.SkipNotEqual(x, y)
 	case 0xA: // Annn - LD I, addr
 	case 0xB: // Bnnn - JP V0, addr
 	case 0xC: // Cxkk - RND Vx, byte

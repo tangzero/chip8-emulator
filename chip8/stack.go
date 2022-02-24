@@ -1,20 +1,36 @@
 package chip8
 
-import "encoding/binary"
+const StackSize = 16
 
-func (emulator *Emulator) StackPush() {
-	if emulator.SP == StackAddress+StackSize*2 {
-		panic("chip8: stack overflow")
-	}
-	binary.BigEndian.PutUint16(emulator.Memory[emulator.SP:], emulator.PC)
-	emulator.SP += 2
+type Stack struct {
+	Values []uint16
 }
 
-func (emulator *Emulator) StackPop() {
-	if emulator.SP == StackAddress {
+func NewStack() *Stack {
+	stack := new(Stack)
+	stack.Clear()
+	return stack
+}
+
+func (stack *Stack) Clear() {
+	stack.Values = make([]uint16, 0, StackSize)
+}
+
+func (stack *Stack) Push(value uint16) {
+	if len(stack.Values) == cap(stack.Values) {
+		panic("chip8: stack overflow")
+	}
+	stack.Values = append(stack.Values, value)
+}
+
+func (stack *Stack) Pop() uint16 {
+	if len(stack.Values) == 0 {
 		panic("chip8: nothing to pop from stack")
 	}
-	emulator.SP -= 2
-	emulator.PC = binary.BigEndian.Uint16(emulator.Memory[emulator.SP:])
-	binary.BigEndian.PutUint16(emulator.Memory[emulator.SP:], 0x00) // clean the stack position
+	n := len(stack.Values) - 1
+	defer func() {
+		stack.Values[n] = 0x00
+		stack.Values = stack.Values[:n]
+	}()
+	return stack.Values[n]
 }

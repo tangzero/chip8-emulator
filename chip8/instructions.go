@@ -13,10 +13,9 @@ func (emulator *Emulator) ClearScreen() {
 
 // Return from a subroutine.
 //
-// The interpreter sets the program counter to the address at the top of the stack,
-// then subtracts 1 from the stack pointer.
+// The interpreter sets the program counter to the address at the top of the stack.
 func (emulator *Emulator) Return() {
-	emulator.StackPop()
+	emulator.PC = emulator.Stack.Pop()
 }
 
 // Jump to location nnn.
@@ -28,10 +27,10 @@ func (emulator *Emulator) Jump(nnn uint16) {
 
 // Call subroutine at nnn.
 //
-// The interpreter increments the stack pointer, then puts the current PC
-// on the top of the stack. The PC is then set to nnn.
+// Puts the current PC on the top of the stack.
+// The PC is then set to nnn.
 func (emulator *Emulator) Call(nnn uint16) {
-	emulator.StackPush()
+	emulator.Stack.Push(emulator.PC)
 	emulator.PC = nnn
 }
 
@@ -39,7 +38,7 @@ func (emulator *Emulator) Call(nnn uint16) {
 //
 // The interpreter compares register Vx to kk, and if they are equal,
 // increments the program counter by 2.
-func (emulator *Emulator) SkipEqual(x uint8, kk uint8) {
+func (emulator *Emulator) SkipEqualByte(x uint8, kk uint8) {
 	if emulator.V[x] == kk {
 		emulator.PC += InstructionSize
 	}
@@ -49,7 +48,7 @@ func (emulator *Emulator) SkipEqual(x uint8, kk uint8) {
 //
 // The interpreter compares register Vx to kk, and if they are not equal,
 // increments the program counter by 2.
-func (emulator *Emulator) SkipNotEqual(x uint8, kk uint8) {
+func (emulator *Emulator) SkipNotEqualByte(x uint8, kk uint8) {
 	if emulator.V[x] != kk {
 		emulator.PC += InstructionSize
 	}
@@ -59,7 +58,7 @@ func (emulator *Emulator) SkipNotEqual(x uint8, kk uint8) {
 //
 // The interpreter compares register Vx to register Vy, and if they are equal,
 // increments the program counter by 2.
-func (emulator *Emulator) SkipRegistersEqual(x uint8, y uint8) {
+func (emulator *Emulator) SkipEqual(x uint8, y uint8) {
 	if emulator.V[x] == emulator.V[y] {
 		emulator.PC += InstructionSize
 	}
@@ -159,6 +158,16 @@ func (emulator *Emulator) SubN(x uint8, y uint8) {
 func (emulator *Emulator) ShiftLeft(x uint8) {
 	emulator.V[0xF] = emulator.V[x] & 0b1000_0000
 	emulator.V[x] <<= 1
+}
+
+// Skip next instruction if Vx != Vy.
+
+// The values of Vx and Vy are compared, and if they are not equal,
+// the program counter is increased by 2.
+func (emulator *Emulator) SkipNotEqual(x uint8, y uint8) {
+	if emulator.V[x] != emulator.V[y] {
+		emulator.PC += InstructionSize
+	}
 }
 
 // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.

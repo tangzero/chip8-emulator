@@ -7,46 +7,43 @@ import (
 	"github.com/tangzero/chip8-emulator/chip8"
 )
 
-func TestEmulator_StackPush(t *testing.T) {
-	emulator := chip8.NewEmulator()
+func TestStack_Push(t *testing.T) {
+	stack := chip8.NewStack()
 
-	emulator.PC = 0xABCD
-	emulator.StackPush()
+	stack.Push(0xABCD)
+	stack.Push(0xCDEF)
+	stack.Push(0x9999)
 
-	assert.Equal(t, uint8(0xAB), emulator.Memory[chip8.StackAddress])
-	assert.Equal(t, uint8(0xCD), emulator.Memory[chip8.StackAddress+1])
-	assert.Equal(t, chip8.StackAddress+2, emulator.SP)
+	assert.Equal(t, []uint16{0xABCD, 0xCDEF, 0x9999}, stack.Values)
 }
 
-func TestEmulator_StackPush_Overflow(t *testing.T) {
-	emulator := chip8.NewEmulator()
+func TestStack_Push_Overflow(t *testing.T) {
+	stack := chip8.NewStack()
 
 	defer func() {
 		assert.Equal(t, "chip8: stack overflow", recover())
 	}()
 
-	emulator.SP = chip8.StackAddress + chip8.StackSize*2
-	emulator.StackPush()
+	for {
+		stack.Push(0xCAFE)
+	}
 }
 
 func TestEmulator_StackPop(t *testing.T) {
-	emulator := chip8.NewEmulator()
+	stack := chip8.NewStack()
 
-	emulator.SP = chip8.StackAddress + 32
-	emulator.Memory[chip8.StackAddress+30] = 0xEE
-	emulator.Memory[chip8.StackAddress+31] = 0xFF
-	emulator.StackPop()
+	stack.Values = append(stack.Values, 0xCAFE)
 
-	assert.Equal(t, uint16(0xEEFF), emulator.PC)
-	assert.Equal(t, chip8.StackAddress+30, emulator.SP)
+	assert.Equal(t, uint16(0xCAFE), stack.Pop())
+	assert.Equal(t, []uint16{}, stack.Values)
 }
 
 func TestEmulator_StackPop_Empty(t *testing.T) {
-	emulator := chip8.NewEmulator()
+	stack := chip8.NewStack()
 
 	defer func() {
 		assert.Equal(t, "chip8: nothing to pop from stack", recover())
 	}()
 
-	emulator.StackPop()
+	stack.Pop()
 }
