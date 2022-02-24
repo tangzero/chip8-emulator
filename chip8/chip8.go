@@ -2,6 +2,7 @@ package chip8
 
 import (
 	"encoding/binary"
+	"image"
 	"math"
 )
 
@@ -24,14 +25,15 @@ const (
 )
 
 type Emulator struct {
-	V      [16]uint8         // general registers
-	I      uint16            // address register
-	SP     uint16            // stack pointer
-	PC     uint16            // program counter
-	DT     uint8             // delay timer
-	ST     uint8             // sound timer
-	Memory [MemorySize]uint8 // 4KB of system RAM
-	ROM    []uint8           // game rom
+	V       [16]uint8         // general registers
+	I       uint16            // address register
+	SP      uint16            // stack pointer
+	PC      uint16            // program counter
+	DT      uint8             // delay timer
+	ST      uint8             // sound timer
+	Memory  [MemorySize]uint8 // 4KB of system RAM
+	ROM     []uint8           // game rom
+	Display *image.Gray
 }
 
 func NewEmulator() *Emulator {
@@ -49,9 +51,11 @@ func (emulator *Emulator) Reset() {
 	emulator.ST = 0
 	emulator.Memory = [MemorySize]uint8{}
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
+	emulator.Display = image.NewGray(image.Rect(0, 0, Width, Height))
 }
 
 func (emulator *Emulator) Cycle() {
+
 	pc := emulator.PC
 
 	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
@@ -60,12 +64,19 @@ func (emulator *Emulator) Cycle() {
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
 
 	nnn := instruction & 0x0FFF
-	// n := uint8(instruction & 0x000F)
+	n := uint8(instruction & 0x000F)
 	kk := uint8(instruction & 0x00FF)
 	x := uint8(instruction & 0x0F00 >> 8)
 	y := uint8(instruction & 0x00F0 >> 4)
 
 	switch instruction & 0xF000 >> 12 {
+	case 0x0:
+		switch instruction & 0x00FF {
+		case 0xE0: // 00E0 - CLS
+			emulator.ClearScreen()
+		case 0xEE: // 00EE - RET
+			emulator.Return()
+		}
 	case 0x1: // 1nnn - JP addr
 		emulator.Jump(nnn)
 	case 0x2: // 2nnn - CALL addr
@@ -106,6 +117,7 @@ func (emulator *Emulator) Cycle() {
 	case 0xB: // Bnnn - JP V0, addr
 	case 0xC: // Cxkk - RND Vx, byte
 	case 0xD: // Dxyn - DRW Vx, Vy, nibble
+		emulator.Draw(x, y, n)
 	case 0xE:
 		switch instruction & 0x00FF {
 		case 0x9E: // SKP Vx

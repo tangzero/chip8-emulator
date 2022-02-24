@@ -1,9 +1,20 @@
 package chip8
 
+import (
+	"image"
+	"image/color"
+	"image/draw"
+)
+
+// Clear the display.
 func (emulator *Emulator) ClearScreen() {
-	// TODO: clear the screen buffer
+	draw.Draw(emulator.Display, emulator.Display.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 }
 
+// Return from a subroutine.
+//
+// The interpreter sets the program counter to the address at the top of the stack,
+// then subtracts 1 from the stack pointer.
 func (emulator *Emulator) Return() {
 	emulator.StackPop()
 }
@@ -128,7 +139,7 @@ func (emulator *Emulator) Sub(x uint8, y uint8) {
 // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0.
 // Then Vx is divided by 2.
 func (emulator *Emulator) ShiftRight(x uint8) {
-	emulator.V[0xF] = emulator.V[x] & 0b00000001
+	emulator.V[0xF] = emulator.V[x] & 0b0000_0001
 	emulator.V[x] >>= 1
 }
 
@@ -146,6 +157,41 @@ func (emulator *Emulator) SubN(x uint8, y uint8) {
 // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
 // Then Vx is multiplied by 2.
 func (emulator *Emulator) ShiftLeft(x uint8) {
-	emulator.V[0xF] = emulator.V[x] & 0b10000000
+	emulator.V[0xF] = emulator.V[x] & 0b1000_0000
 	emulator.V[x] <<= 1
+}
+
+// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+//
+// The interpreter reads n bytes from memory, starting at the address stored in I.
+// These bytes are then displayed as sprites on screen at coordinates (Vx, Vy).
+// Sprites are XORed onto the existing screen. If this causes any pixels to be erased,
+// VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it
+// is outside the coordinates of the display, it wraps around to the opposite side of the screen.
+func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
+	width := uint8(8)
+	height := n
+
+	emulator.V[0xF] = 0x00 // clean collision flag
+
+	for row := uint8(0); row < height; row += 1 {
+		sprite := emulator.Memory[emulator.I+uint16(row)]
+
+		for col := uint8(0); col < width; col += 1 {
+			if (sprite & 0b1000_0000) == 0x1 {
+				px, py := int(emulator.V[x]+col), int(emulator.V[y]+row)
+
+				// check for pixel collision
+				if emulator.Display.At(px, py) != color.Black {
+					emulator.V[0xF] = 0x01 // set collision flag
+				}
+
+				// draw pixel
+				emulator.Display.Set(px, py, color.White)
+			}
+
+			// shift the sprite left 1. This will move the next next col/bit of the sprite into the first position.
+			sprite <<= 1
+		}
+	}
 }
