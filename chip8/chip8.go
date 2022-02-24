@@ -17,6 +17,12 @@ const (
 	VideoBufferAddress = uint16(0x0F00)
 )
 
+const (
+	Width  = 64
+	Height = 32
+	FPS    = 60
+)
+
 type Emulator struct {
 	V      [16]uint8         // general registers
 	I      uint16            // address register

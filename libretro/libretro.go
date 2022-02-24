@@ -36,12 +36,12 @@ func GetEmulatorInfo(info *C.retro_system_info) {
 
 //export GetEmulatorAVInfo
 func GetEmulatorAVInfo(info *C.retro_system_av_info) {
-	info.geometry.base_width = 64
-	info.geometry.base_height = 32
-	info.geometry.max_width = 64
-	info.geometry.max_height = 32
+	info.geometry.base_width = chip8.Width
+	info.geometry.base_height = chip8.Height
+	info.geometry.max_width = chip8.Width
+	info.geometry.max_height = chip8.Height
 	info.geometry.aspect_ratio = 0.0
-	info.timing.fps = 60
+	info.timing.fps = chip8.FPS
 	info.timing.sample_rate = 44100
 }
 
