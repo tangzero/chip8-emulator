@@ -71,7 +71,7 @@ func (emulator *Emulator) AddByte(x uint8, kk uint8) {
 // Set Vx = Vy.
 //
 // Stores the value of register Vy in register Vx.
-func (emulator *Emulator) LoadRegister(x uint8, y uint8) {
+func (emulator *Emulator) Load(x uint8, y uint8) {
 	emulator.V[x] = emulator.V[y]
 }
 
@@ -107,7 +107,7 @@ func (emulator *Emulator) Xor(x uint8, y uint8) {
 // The values of Vx and Vy are added together.
 // If the result is greater than 8 bits (i.e., > 255,) VF is set to 1,
 // otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
-func (emulator *Emulator) AddRegisters(x uint8, y uint8) {
+func (emulator *Emulator) Add(x uint8, y uint8) {
 	sum := uint16(emulator.V[x]) + uint16(emulator.V[y])
 	emulator.V[x] = uint8(sum)
 	emulator.V[0xF] = uint8(sum >> 8)
@@ -130,6 +130,15 @@ func (emulator *Emulator) Sub(x uint8, y uint8) {
 func (emulator *Emulator) ShiftRight(x uint8) {
 	emulator.V[0xF] = emulator.V[x] & 0b00000001
 	emulator.V[x] >>= 1
+}
+
+// Set Vx = Vy - Vx, set VF = NOT borrow.
+//
+// If Vy > Vx, then VF is set to 1, otherwise 0.
+// Then Vx is subtracted from Vy, and the results stored in Vx.
+func (emulator *Emulator) SubN(x uint8, y uint8) {
+	emulator.V[0xF] = map[bool]uint8{true: 1, false: 0}[emulator.V[y] > emulator.V[x]]
+	emulator.V[x] = emulator.V[y] - emulator.V[x]
 }
 
 // Set Vx = Vx SHL 1.

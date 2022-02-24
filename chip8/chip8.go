@@ -28,12 +28,10 @@ type Emulator struct {
 	I      uint16            // address register
 	SP     uint16            // stack pointer
 	PC     uint16            // program counter
+	DT     uint8             // delay timer
+	ST     uint8             // sound timer
 	Memory [MemorySize]uint8 // 4KB of system RAM
-	Timer  struct {
-		Delay uint8 // delay timer
-		Sound uint8 // sound timer
-	}
-	ROM []uint8
+	ROM    []uint8           // game rom
 }
 
 func NewEmulator() *Emulator {
@@ -47,17 +45,17 @@ func (emulator *Emulator) Reset() {
 	emulator.I = 0
 	emulator.SP = StackAddress
 	emulator.PC = ProgramAddress
+	emulator.DT = 0
+	emulator.ST = 0
 	emulator.Memory = [MemorySize]uint8{}
-	emulator.Timer.Delay = 0
-	emulator.Timer.Sound = 0
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
 }
 
 func (emulator *Emulator) Cycle() {
 	pc := emulator.PC
 
-	emulator.Timer.Delay = uint8(math.Max(0, float64(emulator.Timer.Delay)-1))
-	emulator.Timer.Sound = uint8(math.Max(0, float64(emulator.Timer.Sound)-1))
+	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
+	emulator.ST = uint8(math.Max(0, float64(emulator.ST)-1))
 
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
 
@@ -85,7 +83,7 @@ func (emulator *Emulator) Cycle() {
 	case 0x8:
 		switch instruction & 0x000F {
 		case 0x0: // 8xy0 - LD Vx, Vy
-			emulator.LoadRegister(x, y)
+			emulator.Load(x, y)
 		case 0x1: // 8xy1 - OR Vx, Vy
 			emulator.Or(x, y)
 		case 0x2: // 8xy2 - AND Vx, Vy
@@ -93,12 +91,13 @@ func (emulator *Emulator) Cycle() {
 		case 0x3: // 8xy3 - XOR Vx, Vy
 			emulator.Xor(x, y)
 		case 0x4: // 8xy4 - ADD Vx, Vy
-			emulator.AddRegisters(x, y)
+			emulator.Add(x, y)
 		case 0x5: // 8xy5 - SUB Vx, Vy
 			emulator.Sub(x, y)
 		case 0x6: // 8xy6 - SHR Vx {, Vy}
 			emulator.ShiftRight(x)
 		case 0x7: // 8xy7 - SUBN Vx, Vy
+			emulator.SubN(x, y)
 		case 0xE: // 8xyE - SHL Vx {, Vy}
 			emulator.ShiftLeft(x)
 		}
