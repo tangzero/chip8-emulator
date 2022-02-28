@@ -222,7 +222,8 @@ func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
 				emulator.Display.Set(px, py, color.White)
 			}
 
-			// shift the sprite left 1. This will move the next next col/bit of the sprite into the first position.
+			// shift the sprite left 1
+			// this will move the next next col/bit of the sprite into the first position
 			sprite <<= 1
 		}
 	}
@@ -242,4 +243,75 @@ func (emulator *Emulator) SkipKeyPressed(x uint8) {
 // is currently in the up position, PC is increased by 2.
 func (emulator *Emulator) SkipKeyNotPressed(x uint8) {
 	// TODO: implement input
+}
+
+// Set Vx = delay timer value.
+//
+// The value of DT is placed into Vx.
+func (emulator *Emulator) ReadDT(x uint8) {
+	emulator.V[x] = emulator.DT
+}
+
+// Wait for a key press, store the value of the key in Vx.
+//
+// All execution stops until a key is pressed, then the value of that key is stored in Vx.
+func (emulator *Emulator) ReadKey(x uint8) {
+	// TODO: implement input
+}
+
+// Set delay timer = Vx.
+//
+// DT is set equal to the value of Vx.
+func (emulator *Emulator) SetDT(x uint8) {
+	emulator.DT = emulator.V[x]
+}
+
+// Set sound timer = Vx.
+//
+// ST is set equal to the value of Vx.
+func (emulator *Emulator) SetST(x uint8) {
+	emulator.ST = emulator.V[x]
+}
+
+// Set I = I + Vx.
+//
+// The values of I and Vx are added, and the results are stored in I.
+func (emulator *Emulator) AddI(x uint8) {
+	emulator.I += uint16(emulator.V[x])
+}
+
+// Set I = location of sprite for digit Vx.
+//
+// The value of I is set to the location for the hexadecimal sprite
+// corresponding to the value of Vx.
+func (emulator *Emulator) SetI(x uint8) {
+	emulator.I += uint16(emulator.V[x]) * 5
+}
+
+// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+//
+// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory
+// at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+func (emulator *Emulator) LoadBCD(x uint8) {
+	emulator.Memory[emulator.I] = emulator.V[x] / 100          // hundreds digit
+	emulator.Memory[emulator.I+1] = (emulator.V[x] % 100) / 10 // tens digit
+	emulator.Memory[emulator.I+2] = emulator.V[x] % 10         // ones digit
+}
+
+// Store registers V0 through Vx in memory starting at location I.
+//
+// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+func (emulator *Emulator) StoreRegisters(x uint8) {
+	for i := uint8(0); i <= x; i++ {
+		emulator.Memory[emulator.I+uint16(i)] = emulator.V[i]
+	}
+}
+
+// Read registers V0 through Vx from memory starting at location I.
+//
+// The interpreter reads values from memory starting at location I into registers V0 through Vx.
+func (emulator *Emulator) ReadRegisters(x uint8) {
+	for i := uint8(0); i <= x; i++ {
+		emulator.V[i] = emulator.Memory[emulator.I+uint16(i)]
+	}
 }

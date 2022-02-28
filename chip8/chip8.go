@@ -136,14 +136,23 @@ func (emulator *Emulator) Cycle() {
 	case 0xF:
 		switch instruction & 0x00FF {
 		case 0x07: // LD Vx, DT
+			emulator.ReadDT(x)
 		case 0x0A: // LD Vx, K
+			emulator.ReadKey(x)
 		case 0x15: // LD DT, Vx
+			emulator.SetDT(x)
 		case 0x18: // LD ST, Vx
+			emulator.SetST(x)
 		case 0x1E: // ADD I, Vx
+			emulator.AddI(x)
 		case 0x29: // LD F, Vx
+			emulator.SetI(x)
 		case 0x33: // LD B, Vx
+			emulator.LoadBCD(x)
 		case 0x55: // LD [I], Vx
+			emulator.StoreRegisters(x)
 		case 0x65: // LD Vx, [I]
+			emulator.ReadRegisters(x)
 		}
 	}
 
