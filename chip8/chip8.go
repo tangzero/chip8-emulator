@@ -3,12 +3,11 @@ package chip8
 import (
 	"encoding/binary"
 	"image"
-	"math"
 )
 
 const (
 	MemorySize      = 4096 // 4KB of memory
-	InstructionSize = 2
+	InstructionSize = 2    // 2 bytes long instructions
 )
 
 const (
@@ -21,22 +20,31 @@ const (
 	FPS    = 60
 )
 
-type Emulator struct {
-	V       [16]uint8         // general registers
-	I       uint16            // address register
-	PC      uint16            // program counter
-	DT      uint8             // delay timer
-	ST      uint8             // sound timer
-	Stack   *Stack            // very simple stack
-	Memory  [MemorySize]uint8 // 4KB of system RAM
-	ROM     []uint8           // game rom
-	Display *image.Gray       // display buffer
+type KeyPressed func(key uint8) bool
+
+type ROM struct {
+	Name string
+	Data []byte
 }
 
-func NewEmulator() *Emulator {
+type Emulator struct {
+	V          [16]uint8         // general registers
+	I          uint16            // address register
+	PC         uint16            // program counter
+	DT         uint8             // delay timer
+	ST         uint8             // sound timer
+	Stack      *Stack            // very simple stack
+	Memory     [MemorySize]uint8 // 4KB of system RAM
+	ROM        ROM               // game rom
+	Display    *image.RGBA       // display buffer
+	KeyPressed KeyPressed        // input function
+}
+
+func NewEmulator(keyPressed KeyPressed) *Emulator {
 	emulator := new(Emulator)
+	emulator.KeyPressed = keyPressed
 	emulator.Stack = NewStack()
-	emulator.Display = image.NewGray(image.Rect(0, 0, Width, Height))
+	emulator.Display = image.NewRGBA(image.Rect(0, 0, Width, Height))
 	emulator.Reset()
 	return emulator
 }
@@ -54,10 +62,9 @@ func (emulator *Emulator) Reset() {
 	emulator.LoadFont()
 }
 
-func (emulator *Emulator) LoadROM(rom []uint8) {
+func (emulator *Emulator) LoadROM(rom ROM) {
 	emulator.ROM = rom
-	// load rom on memory
-	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
+	copy(emulator.Memory[ProgramAddress:], emulator.ROM.Data)
 }
 
 func (emulator *Emulator) LoadFont() {
@@ -81,11 +88,18 @@ func (emulator *Emulator) LoadFont() {
 	})
 }
 
-func (emulator *Emulator) Cycle() {
-	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
-	emulator.ST = uint8(math.Max(0, float64(emulator.ST)-1))
+func (emulator *Emulator) UpdateTimers() {
+	if emulator.DT > 0 {
+		emulator.DT -= 1
+	}
+	if emulator.ST > 0 {
+		emulator.ST -= 1
+	}
+}
 
+func (emulator *Emulator) Cycle() {
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
+	emulator.PC += InstructionSize
 
 	nnn := instruction & 0x0FFF
 	n := uint8(instruction & 0x000F)
@@ -93,20 +107,18 @@ func (emulator *Emulator) Cycle() {
 	x := uint8(instruction & 0x0F00 >> 8)
 	y := uint8(instruction & 0x00F0 >> 4)
 
-	switch instruction & 0xF000 >> 12 {
+	switch instruction >> 12 & 0xF {
 	case 0x0:
-		switch instruction & 0x00FF {
-		case 0xE0: // 00E0 - CLS
+		switch instruction {
+		case 0x00E0: // 00E0 - CLS
 			emulator.ClearScreen()
-		case 0xEE: // 00EE - RET
+		case 0x00EE: // 00EE - RET
 			emulator.Return()
 		}
 	case 0x1: // 1nnn - JP addr
 		emulator.Jump(nnn)
-		return // skip PC increment
 	case 0x2: // 2nnn - CALL addr
 		emulator.Call(nnn)
-		return // skip PC increment
 	case 0x3: // 3xkk - SE Vx, byte
 		emulator.SkipEqualByte(x, kk)
 	case 0x4: // 4xkk - SNE Vx, byte
@@ -177,6 +189,4 @@ func (emulator *Emulator) Cycle() {
 			emulator.ReadRegisters(x)
 		}
 	}
-
-	emulator.PC += InstructionSize
 }

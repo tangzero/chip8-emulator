@@ -16,7 +16,7 @@ var emulator *chip8.Emulator
 
 //export Initialize
 func Initialize() {
-	emulator = chip8.NewEmulator()
+	emulator = chip8.NewEmulator(nil)
 }
 
 //export Deinitialize

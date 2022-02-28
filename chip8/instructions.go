@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
-	_ "image/png"
 	"math/rand"
 )
 
@@ -125,7 +124,6 @@ func (emulator *Emulator) Add(x uint8, y uint8) {
 	emulator.V[0xF] = uint8(sum >> 8)
 }
 
-// SUB Vx, Vy
 // Set Vx = Vx - Vy, set VF = NOT borrow.
 //
 // If Vx > Vy, then VF is set to 1, otherwise 0.
@@ -140,7 +138,7 @@ func (emulator *Emulator) Sub(x uint8, y uint8) {
 // If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0.
 // Then Vx is divided by 2.
 func (emulator *Emulator) ShiftRight(x uint8) {
-	emulator.V[0xF] = emulator.V[x] & 0b0000_0001
+	emulator.V[0xF] = emulator.V[x] & 0b00000001
 	emulator.V[x] >>= 1
 }
 
@@ -158,7 +156,7 @@ func (emulator *Emulator) SubN(x uint8, y uint8) {
 // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
 // Then Vx is multiplied by 2.
 func (emulator *Emulator) ShiftLeft(x uint8) {
-	emulator.V[0xF] = emulator.V[x] & 0b1000_0000
+	emulator.V[0xF] = (emulator.V[x] & 0b10000000) >> 7
 	emulator.V[x] <<= 1
 }
 
@@ -202,29 +200,27 @@ func (emulator *Emulator) Random(x uint8, kk uint8) {
 // VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it
 // is outside the coordinates of the display, it wraps around to the opposite side of the screen.
 func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
+	x = emulator.V[x]
+	y = emulator.V[y]
 	width := uint8(8)
 	height := n
 
 	emulator.V[0xF] = 0x00 // clean collision flag
 
-	for row := uint8(0); row < height; row += 1 {
-		sprite := emulator.Memory[emulator.I+uint16(row)]
+	for yline := uint8(0); yline < height; yline++ {
+		sprite := emulator.Memory[emulator.I+uint16(yline)]
 
-		for col := uint8(0); col < width; col += 1 {
-			if (sprite & 0b10000000) == 0b10000000 {
-				px, py := int(emulator.V[x]+col), int(emulator.V[y]+row)
+		for xline := uint8(0); xline < width; xline++ {
+			if (sprite & 0b10000000) != 0x00 {
+				px, py := int(x+xline)%Width, int(y+yline)%Height
+				color := emulator.Display.PixOffset(px, py) + 1 // color offset: 0:red, 1:green, 2:blue
 
-				// check for pixel collision
-				if emulator.Display.At(px, py) != color.Black {
-					emulator.V[0xF] = 0x01 // set collision flag
+				if emulator.Display.Pix[color] != 0x00 {
+					emulator.V[0xF] = 0x01 // collision
 				}
 
-				// draw pixel
-				emulator.Display.Set(px, py, color.White)
+				emulator.Display.Pix[color] ^= 0xFF
 			}
-
-			// shift the sprite left 1
-			// this will move the next next col/bit of the sprite into the first position
 			sprite <<= 1
 		}
 	}
@@ -235,7 +231,9 @@ func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
 // Checks the keyboard, and if the key corresponding to the value of Vx
 // is currently in the down position, PC is increased by 2.
 func (emulator *Emulator) SkipKeyPressed(x uint8) {
-	// TODO: implement input
+	if emulator.KeyPressed(emulator.V[x]) {
+		emulator.PC += InstructionSize
+	}
 }
 
 // Skip next instruction if key with the value of Vx is not pressed.
@@ -243,7 +241,9 @@ func (emulator *Emulator) SkipKeyPressed(x uint8) {
 // Checks the keyboard, and if the key corresponding to the value of Vx
 // is currently in the up position, PC is increased by 2.
 func (emulator *Emulator) SkipKeyNotPressed(x uint8) {
-	// TODO: implement input
+	if !emulator.KeyPressed(emulator.V[x]) {
+		emulator.PC += InstructionSize
+	}
 }
 
 // Set Vx = delay timer value.
@@ -257,7 +257,14 @@ func (emulator *Emulator) ReadDT(x uint8) {
 //
 // All execution stops until a key is pressed, then the value of that key is stored in Vx.
 func (emulator *Emulator) ReadKey(x uint8) {
-	// TODO: implement input
+	for {
+		for key := uint8(0); key < 16; key++ {
+			if emulator.KeyPressed(key) {
+				emulator.V[x] = key
+				return
+			}
+		}
+	}
 }
 
 // Set delay timer = Vx.
@@ -286,7 +293,7 @@ func (emulator *Emulator) AddI(x uint8) {
 // The value of I is set to the location for the hexadecimal sprite
 // corresponding to the value of Vx.
 func (emulator *Emulator) SetI(x uint8) {
-	emulator.I += uint16(emulator.V[x]) * 5
+	emulator.I = uint16(emulator.V[x]) * 5
 }
 
 // Store BCD representation of Vx in memory locations I, I+1, and I+2.
@@ -303,16 +310,12 @@ func (emulator *Emulator) LoadBCD(x uint8) {
 //
 // The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 func (emulator *Emulator) StoreRegisters(x uint8) {
-	for i := uint8(0); i <= x; i++ {
-		emulator.Memory[emulator.I+uint16(i)] = emulator.V[i]
-	}
+	copy(emulator.Memory[emulator.I:], emulator.V[:x+1])
 }
 
 // Read registers V0 through Vx from memory starting at location I.
 //
 // The interpreter reads values from memory starting at location I into registers V0 through Vx.
 func (emulator *Emulator) ReadRegisters(x uint8) {
-	for i := uint8(0); i <= x; i++ {
-		emulator.V[i] = emulator.Memory[emulator.I+uint16(i)]
-	}
+	copy(emulator.V[0:], emulator.Memory[emulator.I:emulator.I+uint16(x)+1])
 }
