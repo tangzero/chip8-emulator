@@ -1,5 +1,5 @@
+#include "libretro-common/include/libretro.h"
 #include <string.h>
-#include "libretro.h"
 
 // RETRO_API void retro_set_environment(retro_environment_t);
 // RETRO_API void retro_set_video_refresh(retro_video_refresh_t);

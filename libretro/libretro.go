@@ -1,8 +1,7 @@
 package main
 
 /*
-#cgo CFLAGS: -I./libretro-common/include
-#include "libretro.h"
+#include "libretro-common/include/libretro.h"
 
 typedef struct retro_system_info retro_system_info;
 typedef struct retro_system_av_info retro_system_av_info;
