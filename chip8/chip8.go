@@ -55,6 +55,12 @@ func (emulator *Emulator) Reset() {
 	// clean display
 	emulator.ClearScreen()
 
+	// reload ROM
+	emulator.LoadROM(emulator.ROM)
+}
+
+func (emulator *Emulator) LoadROM(rom []uint8) {
+	emulator.ROM = rom
 	// load rom on memory
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
 }
