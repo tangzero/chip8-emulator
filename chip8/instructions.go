@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	_ "image/png"
 	"math/rand"
 )
 
@@ -210,7 +211,7 @@ func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
 		sprite := emulator.Memory[emulator.I+uint16(row)]
 
 		for col := uint8(0); col < width; col += 1 {
-			if (sprite & 0b1000_0000) == 0x1 {
+			if (sprite & 0b10000000) == 0b10000000 {
 				px, py := int(emulator.V[x]+col), int(emulator.V[y]+row)
 
 				// check for pixel collision

@@ -48,15 +48,10 @@ func (emulator *Emulator) Reset() {
 	emulator.DT = 0
 	emulator.ST = 0
 	emulator.Memory = [MemorySize]uint8{}
-
-	// clean stack
 	emulator.Stack.Clear()
-
-	// clean display
 	emulator.ClearScreen()
-
-	// reload ROM
 	emulator.LoadROM(emulator.ROM)
+	emulator.LoadFont()
 }
 
 func (emulator *Emulator) LoadROM(rom []uint8) {
@@ -65,9 +60,28 @@ func (emulator *Emulator) LoadROM(rom []uint8) {
 	copy(emulator.Memory[ProgramAddress:], emulator.ROM)
 }
 
-func (emulator *Emulator) Cycle() {
-	pc := emulator.PC
+func (emulator *Emulator) LoadFont() {
+	copy(emulator.Memory[0:], []uint8{
+		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+		0x20, 0x60, 0x20, 0x20, 0x70, // 1
+		0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+		0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+		0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+		0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+		0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+		0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+		0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+		0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+		0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+		0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+		0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+		0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+		0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+		0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+	})
+}
 
+func (emulator *Emulator) Cycle() {
 	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
 	emulator.ST = uint8(math.Max(0, float64(emulator.ST)-1))
 
@@ -89,8 +103,10 @@ func (emulator *Emulator) Cycle() {
 		}
 	case 0x1: // 1nnn - JP addr
 		emulator.Jump(nnn)
+		return // skip PC increment
 	case 0x2: // 2nnn - CALL addr
 		emulator.Call(nnn)
+		return // skip PC increment
 	case 0x3: // 3xkk - SE Vx, byte
 		emulator.SkipEqualByte(x, kk)
 	case 0x4: // 4xkk - SNE Vx, byte
@@ -162,8 +178,5 @@ func (emulator *Emulator) Cycle() {
 		}
 	}
 
-	// if the program counter is unchanged and isn't a loop, read next instruction
-	if emulator.PC == pc && nnn != pc {
-		emulator.PC += InstructionSize
-	}
+	emulator.PC += InstructionSize
 }
