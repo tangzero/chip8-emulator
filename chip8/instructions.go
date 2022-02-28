@@ -227,3 +227,19 @@ func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
 		}
 	}
 }
+
+// Skip next instruction if key with the value of Vx is pressed.
+//
+// Checks the keyboard, and if the key corresponding to the value of Vx
+// is currently in the down position, PC is increased by 2.
+func (emulator *Emulator) SkipKeyPressed(x uint8) {
+	// TODO: implement input
+}
+
+// Skip next instruction if key with the value of Vx is not pressed.
+//
+// Checks the keyboard, and if the key corresponding to the value of Vx
+// is currently in the up position, PC is increased by 2.
+func (emulator *Emulator) SkipKeyNotPressed(x uint8) {
+	// TODO: implement input
+}

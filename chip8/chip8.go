@@ -129,7 +129,9 @@ func (emulator *Emulator) Cycle() {
 	case 0xE:
 		switch instruction & 0x00FF {
 		case 0x9E: // SKP Vx
+			emulator.SkipKeyPressed(x)
 		case 0xA1: // SKNP Vx
+			emulator.SkipKeyNotPressed(x)
 		}
 	case 0xF:
 		switch instruction & 0x00FF {
