@@ -118,10 +118,13 @@ func (emulator *Emulator) Cycle() {
 		}
 	case 0x9: // 9xy0 - SNE Vx, Vy
 		emulator.SkipNotEqual(x, y)
-	case 0xA: // Annn - LD I, addr
-	case 0xB: // Bnnn - JP V0, addr
-	case 0xC: // Cxkk - RND Vx, byte
-	case 0xD: // Dxyn - DRW Vx, Vy, nibble
+	case 0xA: // Annn - LD I, nnn
+		emulator.LoadI(nnn)
+	case 0xB: // Bnnn - JP V0, nnn
+		emulator.JumpV0(nnn)
+	case 0xC: // Cxkk - RND Vx, kk
+		emulator.Random(x, kk)
+	case 0xD: // Dxyn - DRW Vx, Vy, n
 		emulator.Draw(x, y, n)
 	case 0xE:
 		switch instruction & 0x00FF {

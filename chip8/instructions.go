@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math/rand"
 )
 
 // Clear the display.
@@ -161,13 +162,35 @@ func (emulator *Emulator) ShiftLeft(x uint8) {
 }
 
 // Skip next instruction if Vx != Vy.
-
+//
 // The values of Vx and Vy are compared, and if they are not equal,
 // the program counter is increased by 2.
 func (emulator *Emulator) SkipNotEqual(x uint8, y uint8) {
 	if emulator.V[x] != emulator.V[y] {
 		emulator.PC += InstructionSize
 	}
+}
+
+// Set I = nnn.
+//
+// The value of register I is set to nnn.
+func (emulator *Emulator) LoadI(nnn uint16) {
+	emulator.I = nnn
+}
+
+// Jump to location nnn + V0.
+//
+// The program counter is set to nnn plus the value of V0.
+func (emulator *Emulator) JumpV0(nnn uint16) {
+	emulator.PC = nnn + uint16(emulator.V[0])
+}
+
+// Set Vx = random byte AND kk.
+//
+// The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk.
+// The results are stored in Vx. See instruction 8xy2 for more information on AND.
+func (emulator *Emulator) Random(x uint8, kk uint8) {
+	emulator.V[x] = uint8(rand.Intn(0xFF)) & kk
 }
 
 // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
