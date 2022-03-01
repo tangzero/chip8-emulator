@@ -101,12 +101,10 @@ func (emulator *Emulator) UpdateTimers() {
 		emulator.DT -= 1
 	}
 	if emulator.ST > 0 {
+		emulator.ST -= 1
 		if emulator.StopSound == nil {
-			_ = 1
 			emulator.StopSound = emulator.PlaySound(Sound)
 		}
-
-		emulator.ST -= 1
 	} else {
 		if emulator.StopSound != nil {
 			emulator.StopSound()
