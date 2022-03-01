@@ -87,7 +87,7 @@ func (ui *UI) Draw(screen *ebiten.Image) {
 	screen.DrawImage(frame, operation)
 }
 
-func (ui *UI) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (ui *UI) Layout(int, int) (int, int) {
 	return Width, Height
 }
 
