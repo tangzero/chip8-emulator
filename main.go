@@ -64,6 +64,10 @@ func (ui *UI) Run() {
 }
 
 func (ui *UI) Update() error {
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		ui.Emulator.Reset()
+	}
+
 	switch ui.State {
 	case LoadingState:
 		go ui.Run()
