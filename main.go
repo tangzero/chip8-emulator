@@ -99,10 +99,7 @@ func (ui *UI) PlaySound(sound []byte) func() {
 	player := ui.AudioContext.NewPlayerFromBytes(sound)
 	player.SetVolume(0.3)
 	player.Play()
-	return func() {
-		player.Pause()
-		_ = player.Close()
-	}
+	return func() { _ = player.Close() }
 }
 
 func main() {
