@@ -1,9 +1,13 @@
 package chip8
 
 import (
+	_ "embed"
 	"encoding/binary"
 	"image"
 )
+
+//go:embed sound.wav
+var Sound []byte
 
 const (
 	MemorySize      = 4096 // 4KB of memory
@@ -21,6 +25,7 @@ const (
 )
 
 type KeyPressed func(key uint8) bool
+type PlaySound func(sound []byte) func()
 
 type ROM struct {
 	Name string
@@ -38,11 +43,14 @@ type Emulator struct {
 	ROM        ROM               // game rom
 	Display    *image.RGBA       // display buffer
 	KeyPressed KeyPressed        // input function
+	PlaySound  PlaySound
+	StopSound  func()
 }
 
-func NewEmulator(keyPressed KeyPressed) *Emulator {
+func NewEmulator(keyPressed KeyPressed, playSound PlaySound) *Emulator {
 	emulator := new(Emulator)
 	emulator.KeyPressed = keyPressed
+	emulator.PlaySound = playSound
 	emulator.Stack = NewStack()
 	emulator.Display = image.NewRGBA(image.Rect(0, 0, Width, Height))
 	emulator.Reset()
@@ -93,7 +101,17 @@ func (emulator *Emulator) UpdateTimers() {
 		emulator.DT -= 1
 	}
 	if emulator.ST > 0 {
+		if emulator.StopSound == nil {
+			_ = 1
+			emulator.StopSound = emulator.PlaySound(Sound)
+		}
+
 		emulator.ST -= 1
+	} else {
+		if emulator.StopSound != nil {
+			emulator.StopSound()
+			emulator.StopSound = nil
+		}
 	}
 }
 

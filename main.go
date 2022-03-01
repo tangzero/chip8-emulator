@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/tangzero/chip8-emulator/chip8"
 )
 
@@ -50,8 +51,9 @@ var KeyMapping = []ebiten.Key{
 }
 
 type UI struct {
-	Emulator *chip8.Emulator
-	State    State
+	Emulator     *chip8.Emulator
+	State        State
+	AudioContext *audio.Context
 }
 
 func (ui *UI) Run() {
@@ -85,17 +87,27 @@ func (ui *UI) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return Width, Height
 }
 
-func KeyPressed(key uint8) bool {
+func (ui *UI) KeyPressed(key uint8) bool {
 	return ebiten.IsKeyPressed(KeyMapping[key])
+}
+
+func (ui *UI) PlaySound(sound []byte) func() {
+	player := ui.AudioContext.NewPlayerFromBytes(sound)
+	player.SetVolume(0.3)
+	player.Play()
+	return func() {
+		player.Pause()
+		_ = player.Close()
+	}
 }
 
 func main() {
 	rom := LoadROM()
 
-	ui := UI{
-		Emulator: chip8.NewEmulator(KeyPressed),
-		State:    LoadingState,
-	}
+	ui := UI{}
+	ui.Emulator = chip8.NewEmulator(ui.KeyPressed, ui.PlaySound)
+	ui.State = LoadingState
+	ui.AudioContext = audio.NewContext(44100)
 	ui.Emulator.LoadROM(rom)
 
 	ebiten.SetWindowSize(Width, Height)
