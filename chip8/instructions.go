@@ -213,13 +213,13 @@ func (emulator *Emulator) Draw(x uint8, y uint8, n uint8) {
 		for xline := uint8(0); xline < width; xline++ {
 			if (sprite & 0b10000000) != 0x00 {
 				px, py := int(x+xline)%Width, int(y+yline)%Height
-				color := emulator.Display.PixOffset(px, py) + 1 // color offset: 0:red, 1:green, 2:blue
+				index := emulator.Display.PixOffset(px, py) + 1 // color offset: 0:red, 1:green, 2:blue
 
-				if emulator.Display.Pix[color] != 0x00 {
+				if emulator.Display.Pix[index] != 0x00 {
 					emulator.V[0xF] = 0x01 // collision
 				}
 
-				emulator.Display.Pix[color] ^= 0xFF
+				emulator.Display.Pix[index] ^= 0xFF
 			}
 			sprite <<= 1
 		}
