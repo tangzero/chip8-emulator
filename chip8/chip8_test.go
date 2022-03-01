@@ -8,7 +8,7 @@ import (
 )
 
 func TestEmulator_Reset(t *testing.T) {
-	emulator := chip8.NewEmulator(nil)
+	emulator := chip8.NewEmulator(nil, nil)
 	emulator.V[0x03] = 0xFF
 	emulator.V[0x0F] = 0xBB
 
