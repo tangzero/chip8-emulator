@@ -50,71 +50,81 @@ var KeyMapping = []ebiten.Key{
 	ebiten.KeyV,
 }
 
-type UI struct {
-	Emulator     *chip8.Emulator
-	State        State
-	AudioContext *audio.Context
+type GUI struct {
+	State    State
+	Emulator *chip8.Emulator
 }
 
-func (ui *UI) Run() {
+func (gui *GUI) Run() {
 	for {
-		ui.Emulator.Cycle()
+		gui.Emulator.Cycle()
 		time.Sleep(time.Millisecond * 2)
 	}
 }
 
-func (ui *UI) Update() error {
+func (gui *GUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		ui.Emulator.Reset()
+		gui.Emulator.Reset()
 	}
-
-	switch ui.State {
+	switch gui.State {
 	case LoadingState:
-		go ui.Run()
-		ui.State = RunningState
+		go gui.Run()
+		gui.State = RunningState
 	case RunningState:
-		ui.Emulator.UpdateTimers()
+		gui.Emulator.UpdateTimers()
 	}
 	return nil
 }
 
-func (ui *UI) Draw(screen *ebiten.Image) {
-	frame := ebiten.NewImageFromImage(ui.Emulator.Display)
-
+func (gui *GUI) Draw(screen *ebiten.Image) {
+	frame := ebiten.NewImageFromImage(gui.Emulator.Display)
 	operation := new(ebiten.DrawImageOptions)
 	operation.GeoM.Scale(ScreenScale, ScreenScale)
-
 	screen.DrawImage(frame, operation)
 }
 
-func (ui *UI) Layout(int, int) (int, int) {
+func (gui *GUI) Layout(int, int) (int, int) {
 	return Width, Height
 }
 
-func (ui *UI) KeyPressed(key uint8) bool {
+func KeyPressed(key uint8) bool {
 	return ebiten.IsKeyPressed(KeyMapping[key])
 }
 
-func (ui *UI) PlaySound(sound []byte) func() {
-	player := ui.AudioContext.NewPlayerFromBytes(sound)
+func SoundPlayer(sound []byte) (func(), func()) {
+	player := audio.NewContext(chip8.SampleRate).NewPlayerFromBytes(sound)
 	player.SetVolume(0.3)
-	player.Play()
-	return func() { _ = player.Close() }
+	return PlaySound(player), StopSound(player)
+}
+
+func PlaySound(player *audio.Player) func() {
+	return func() {
+		if player.IsPlaying() {
+			return
+		}
+		player.Play()
+	}
+}
+
+func StopSound(player *audio.Player) func() {
+	return func() {
+		player.Pause()
+		player.Seek(0)
+	}
 }
 
 func main() {
 	rom := LoadROM()
 
-	ui := UI{}
-	ui.Emulator = chip8.NewEmulator(ui.KeyPressed, ui.PlaySound)
-	ui.State = LoadingState
-	ui.AudioContext = audio.NewContext(44100)
-	ui.Emulator.LoadROM(rom)
+	gui := GUI{}
+	gui.State = LoadingState
+	gui.Emulator = chip8.NewEmulator(KeyPressed, SoundPlayer)
+	gui.Emulator.LoadROM(rom)
 
 	ebiten.SetWindowSize(Width, Height)
 	ebiten.SetWindowTitle("CHIP-8 : " + rom.Name)
 
-	if err := ebiten.RunGame(&ui); err != nil {
+	if err := ebiten.RunGame(&gui); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -4,10 +4,11 @@ import (
 	_ "embed"
 	"encoding/binary"
 	"image"
+	"math"
 )
 
-//go:embed sound.wav
-var Sound []byte
+//go:embed beep.wav
+var Beep []byte
 
 const (
 	MemorySize      = 4096 // 4KB of memory
@@ -19,13 +20,14 @@ const (
 )
 
 const (
-	Width  = 64
-	Height = 32
-	FPS    = 60
+	Width      = 64
+	Height     = 32
+	FPS        = 60
+	SampleRate = 44100
 )
 
 type KeyPressed func(key uint8) bool
-type PlaySound func(sound []byte) func()
+type SoundPlayer func(sound []byte) (func(), func())
 
 type ROM struct {
 	Name string
@@ -43,14 +45,14 @@ type Emulator struct {
 	ROM        ROM               // game rom
 	Display    *image.RGBA       // display buffer
 	KeyPressed KeyPressed        // input function
-	PlaySound  PlaySound
-	StopSound  func()
+	PlaySound  func()            // play sound effect
+	StopSound  func()            // stop sound effect
 }
 
-func NewEmulator(keyPressed KeyPressed, playSound PlaySound) *Emulator {
+func NewEmulator(keyPressed KeyPressed, soundPlayer SoundPlayer) *Emulator {
 	emulator := new(Emulator)
 	emulator.KeyPressed = keyPressed
-	emulator.PlaySound = playSound
+	emulator.PlaySound, emulator.StopSound = soundPlayer(Beep)
 	emulator.Stack = NewStack()
 	emulator.Display = image.NewRGBA(image.Rect(0, 0, Width, Height))
 	emulator.Reset()
@@ -97,20 +99,13 @@ func (emulator *Emulator) LoadFont() {
 }
 
 func (emulator *Emulator) UpdateTimers() {
-	if emulator.DT > 0 {
-		emulator.DT -= 1
-	}
-	if emulator.ST > 0 {
-		emulator.ST -= 1
-		if emulator.StopSound == nil {
-			emulator.StopSound = emulator.PlaySound(Sound)
-		}
+	if emulator.ST != 0 {
+		emulator.PlaySound()
 	} else {
-		if emulator.StopSound != nil {
-			emulator.StopSound()
-			emulator.StopSound = nil
-		}
+		emulator.StopSound()
 	}
+	emulator.ST = uint8(math.Max(0, float64(emulator.ST)-1))
+	emulator.DT = uint8(math.Max(0, float64(emulator.DT)-1))
 }
 
 func (emulator *Emulator) Cycle() {
