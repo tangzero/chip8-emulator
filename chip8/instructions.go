@@ -317,5 +317,5 @@ func (emulator *Emulator) StoreRegisters(x uint8) {
 //
 // The interpreter reads values from memory starting at location I into registers V0 through Vx.
 func (emulator *Emulator) ReadRegisters(x uint8) {
-	copy(emulator.V[0:], emulator.Memory[emulator.I:emulator.I+uint16(x)+1])
+	copy(emulator.V[:x+1], emulator.Memory[emulator.I:])
 }
