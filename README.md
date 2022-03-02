@@ -11,3 +11,6 @@ Yet another CHIP-8 emulator built in Go (with little C)
 ![pong](https://github.com/tangzero/chip8-emulator/raw/main/screenshots/pong.png)
 ![invaders_1](https://github.com/tangzero/chip8-emulator/raw/main/screenshots/invaders_1.png)
 ![invaders_2](https://github.com/tangzero/chip8-emulator/raw/main/screenshots/invaders_2.png)
+
+### Web (wip)
+![web_opcodes](https://github.com/tangzero/chip8-emulator/raw/main/screenshots/web_opcodes.png)
