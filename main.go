@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"log"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 	"github.com/tangzero/chip8-emulator/chip8"
 )
 
@@ -92,8 +94,11 @@ func KeyPressed(key uint8) bool {
 }
 
 func SoundPlayer(sound []byte) (func(), func()) {
-	player := audio.NewContext(chip8.SampleRate).NewPlayerFromBytes(sound)
-	player.SetVolume(0.3)
+	stream, err := wav.DecodeWithSampleRate(chip8.SampleRate, bytes.NewReader(sound))
+	assert(err)
+	player, err := audio.NewContext(chip8.SampleRate).NewPlayer(stream)
+	assert(err)
+	player.SetVolume(0.5)
 	return PlaySound(player), StopSound(player)
 }
 
@@ -109,7 +114,7 @@ func PlaySound(player *audio.Player) func() {
 func StopSound(player *audio.Player) func() {
 	return func() {
 		player.Pause()
-		player.Seek(0)
+		assert(player.Rewind())
 	}
 }
 
@@ -124,7 +129,11 @@ func main() {
 	ebiten.SetWindowSize(Width, Height)
 	ebiten.SetWindowTitle("CHIP-8 : " + rom.Name)
 
-	if err := ebiten.RunGame(&gui); err != nil {
-		log.Fatal(err)
+	assert(ebiten.RunGame(&gui))
+}
+
+func assert(err error) {
+	if err != nil {
+		log.Panic(err)
 	}
 }
