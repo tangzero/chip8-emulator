@@ -1,5 +1,5 @@
 TARGET=chip8_libretro
-LIBRETRO_CORE=$(TARGET).so
+LIBRETRO_CORE=$(TARGET).dylib
 LIBRETRO_HEADER=$(TARGET).h
 BUILD_VERSION=$(shell git rev-parse --short HEAD)
 

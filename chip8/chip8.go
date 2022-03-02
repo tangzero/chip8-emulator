@@ -20,10 +20,11 @@ const (
 )
 
 const (
-	Width      = 64
-	Height     = 32
-	FPS        = 60
-	SampleRate = 44100
+	Width          = 64
+	Height         = 32
+	FPS            = 60
+	CyclesPerFrame = 8
+	SampleRate     = 44100
 )
 
 type KeyPressed func(key uint8) bool
@@ -98,6 +99,13 @@ func (emulator *Emulator) LoadFont() {
 	})
 }
 
+func (emulator *Emulator) Update() {
+	emulator.UpdateTimers()
+	for cycle := 0; cycle < CyclesPerFrame; cycle++ {
+		emulator.Cycle()
+	}
+}
+
 func (emulator *Emulator) UpdateTimers() {
 	if emulator.ST != 0 {
 		emulator.PlaySound()
@@ -110,6 +118,9 @@ func (emulator *Emulator) UpdateTimers() {
 
 func (emulator *Emulator) Cycle() {
 	instruction := binary.BigEndian.Uint16(emulator.Memory[emulator.PC:])
+	if instruction == 0x0000 {
+		return
+	}
 	emulator.PC += InstructionSize
 
 	nnn := instruction & 0x0FFF

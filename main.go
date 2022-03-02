@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "embed"
 	"log"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -57,24 +56,11 @@ type GUI struct {
 	Emulator *chip8.Emulator
 }
 
-func (gui *GUI) Run() {
-	for {
-		gui.Emulator.Cycle()
-		time.Sleep(time.Millisecond * 2)
-	}
-}
-
 func (gui *GUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		gui.Emulator.Reset()
 	}
-	switch gui.State {
-	case LoadingState:
-		go gui.Run()
-		gui.State = RunningState
-	case RunningState:
-		gui.Emulator.UpdateTimers()
-	}
+	gui.Emulator.Update()
 	return nil
 }
 

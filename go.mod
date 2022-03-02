@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.2.5
+	github.com/lanzafame/bobblehat v0.0.0-20190628174408-a0f0792c1691
 	github.com/stretchr/testify v1.7.0
 )
 
